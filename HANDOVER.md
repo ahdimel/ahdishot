@@ -4,8 +4,8 @@
 > source of truth for scope & decisions). This doc covers **what Phases 1–2 delivered, how it's built,
 > what is verified vs. still needs a human smoke-test, and where Phase 3 starts.**
 >
-> **Date:** 2026-07-05 · **Status:** Phase 1 owner-verified. **Phase 2 (inline annotation editor) code
-> complete; builds clean & launches natively on arm64 — awaiting owner smoke-test (§10).**
+> **Date:** 2026-07-05 · **Status:** Phases 1–2 **owner-verified on-device** (native arm64). Phase 2 =
+> the inline annotation editor (§0). Only multi-monitor remains unexercised. Ready for Phase 3 (§9).
 
 ---
 
@@ -60,12 +60,11 @@ Plus a menu-bar agent (no Dock icon) with **Capture Region**, **Open Screenshots
 | **End-to-end capture (permission + drag + save)** | ✅ **Smoke-tested 2026-07-05** (owner) — permission grant, drag-select, crisp Retina PNG saved, works over a full-screen game (Factorio). See §6.1. |
 | **Phase 2 — compiles clean (no warnings), arm64** | ✅ `./build.sh` succeeds; `file` reports arm64. |
 | **Phase 2 — launches, idle footprint** | ✅ launches as before; **~43 MB RSS, 0.0% CPU** idle. |
-| **Phase 2 — editor interaction (annotate / palette / text / copy / undo / resize)** | ✅ **Owner-verified 2026-07-05** — see §10.1. |
-| **Phase 2 — Save / Close / Esc / re-crop-clipping / toolbar edge-flip / multi-monitor** | ⏳ Not explicitly exercised yet; low risk. See §10.1. |
+| **Phase 2 — full editor (annotate / palette / text / copy / save / undo / resize / re-crop-clip / esc / edge-flip)** | ✅ **Owner-verified 2026-07-05** — see §10.1. |
 
 **The interactive paths cannot be exercised headlessly** (they need the macOS Screen Recording TCC grant
-and real mouse input). The owner smoke-tested the core editor on-device (§10.1); a few secondary paths
-remain to spot-check.
+and real mouse input). The owner smoke-tested the whole editor on-device (§10.1). Only **multi-monitor**
+remains unexercised (single-display setup at test time; low risk).
 
 ---
 
@@ -298,8 +297,12 @@ On the owner's M4 Mac, editor signed with `ahdishot-dev`:
 - ✅ **Copy to clipboard**, **undo**, and **resize/re-crop the selection box** all work.
 - ✅ **Fixed:** the text tool's options popover no longer shows a dead "thickness" control (thickness is
   stroke-only; text uses the size popup). Verified after rebuild.
-- ⏳ **Not explicitly exercised yet** (expected fine): **Save** to `~/Pictures/ahdishot/`, **Close**/**Esc**
-  dismiss, re-crop **clipping on export**, toolbar **edge-flip** near screen edges, and **multi-monitor**.
+- ✅ **Save** to `~/Pictures/ahdishot/`, **Esc** closes the editor, toolbar **edge-flip** on both edges.
+- ✅ **Re-crop clipping on export:** resizing the crop leaves annotations anchored in place; parts outside
+  the box show dimmed and are clipped (not scaled/deleted) on export — moving the box back re-reveals them.
+- ✅ **Signed with the stable `ahdishot-dev` identity** (§4.1); Screen Recording grant now persists across
+  rebuilds.
+- ⏳ **Multi-monitor** not exercised (single-display setup at test time); low risk.
 
 ---
 
