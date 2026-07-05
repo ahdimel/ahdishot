@@ -213,6 +213,13 @@ Layout and behavior (confirmed with owner):
 
 > Not shipping immediately, but design so it's achievable without rework.
 
+> ⚠️ **Blocker (owner decision, 2026-07-05): the owner is _not_ enrolling in the Apple Developer
+> Program yet.** Without it there is **no Developer ID / distribution certificate**, so ahdishot
+> **cannot be notarized and cannot be published to the Mac App Store** — Phase 4's signing/notarization
+> and App Store steps are **on hold** until the owner chooses to enroll ($99/yr). Until then the app is
+> **local-only**, signed with the self-signed `ahdishot-dev` identity (HANDOVER §4.1) and installed by
+> hand (copied into `/Applications`). It runs fine for the owner; it just isn't distributable to others.
+
 - **Sandboxing:** App Store requires the **App Sandbox**. The chosen stack is compatible:
   - `ScreenCaptureKit` works sandboxed (user grants Screen Recording).
   - `RegisterEventHotKey` works sandboxed.
@@ -254,5 +261,9 @@ Each phase is **run and verified on-device**, not just compiled.
 ## 11. Open questions / TBD
 
 1. ~~**Stroke thickness steps**~~ — **RESOLVED 2026-07-05:** thin/medium/thick = **2 / 4 / 6 pt** (§5).
-2. **App / menu-bar icon** — placeholder SF Symbol for now; commission original artwork before release.
-3. **Apple Developer Program** — owner to enroll before any signed/App Store build (Phase 4).
+2. **App / menu-bar icon** — a generated **placeholder** `AppIcon.icns` now ships (blue→purple squircle
+   + white `camera.viewfinder`, made by `tools/make-icon.swift`; menu bar still uses the SF Symbol).
+   Original, no Lightshot assets. Commission bespoke artwork before any public release.
+3. **Apple Developer Program** — **owner has decided NOT to enroll yet (2026-07-05)**, so signing /
+   notarization / App Store distribution are **blocked** (see §9 blocker callout). Revisit if/when the
+   owner wants to distribute beyond their own machine.

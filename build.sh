@@ -21,6 +21,7 @@ swiftc -O \
   -framework UniformTypeIdentifiers
 
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
+cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 
 # Code signing. Signing with a STABLE local identity (the self-signed "ahdishot-dev" cert) keeps
 # the Screen Recording (TCC) grant alive across rebuilds: TCC keys the grant off the app's

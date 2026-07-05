@@ -131,8 +131,11 @@ ahdishot/
 │   ├── LaunchAtLogin.swift  # SMAppService.mainApp login-item wrapper
 │   ├── HotKeyRecorderButton.swift # Click-to-record shortcut control (keyCode+modifier capture)
 │   └── SettingsWindowController.swift # Settings window (programmatic AppKit)
+├── tools/
+│   └── make-icon.swift      # Regenerates Resources/AppIcon.icns (SF Symbol on a gradient squircle)
 ├── Resources/
-│   └── Info.plist           # Bundle id com.ahdimel.ahdishot, LSUIElement, min macOS 15
+│   ├── Info.plist           # Bundle id com.ahdimel.ahdishot, LSUIElement, CFBundleIconFile, min macOS 15
+│   └── AppIcon.icns         # Generated app icon (see §13 / tools/make-icon.swift)
 └── build/                   # (generated) ahdishot.app lives here
 ```
 
@@ -322,13 +325,18 @@ Ran on the owner's M4 Mac, macOS 26.5:
   filename extension follows. **Clipboard stays PNG** (lossless, universally pasteable). `EditorView`
   seeds each tool's color/thickness from `Settings` at construction, then per-tool memory takes over.
 
-## 9. Where Phase 4 starts (distribution readiness)
+## 9. Where Phase 4 starts (distribution readiness) — ON HOLD
 
-Phase 3 is code-complete (pending owner smoke-test §12). **Phase 4** per **[REQUIREMENTS.md](REQUIREMENTS.md)
-§9**: App **Sandbox** entitlements + the **security-scoped bookmark** flip for the save folder (the seam is
-already in `Settings.swift` — swap `bookmarkData()`/`URL(resolvingBookmarkData:)` to `.withSecurityScope`),
-**Developer ID signing + notarization + hardened runtime**, App Store Connect listing, EULA + privacy
-policy. Prereq: owner enrolls in the **Apple Developer Program** (REQUIREMENTS §11).
+> ⚠️ **Phase 4 is blocked by owner decision (2026-07-05): NOT enrolling in the Apple Developer Program
+> yet.** No Developer ID cert ⇒ **no notarization and no App Store** (REQUIREMENTS §9 callout). The app is
+> **local-only** for now: signed with the self-signed `ahdishot-dev` identity (§4.1) and **installed by
+> hand into `/Applications`** (see §13). Everything below waits until the owner opts to enroll ($99/yr).
+
+**Phase 4** per **[REQUIREMENTS.md](REQUIREMENTS.md) §9**: App **Sandbox** entitlements + the
+**security-scoped bookmark** flip for the save folder (the seam is already in `Settings.swift` — swap
+`bookmarkData()`/`URL(resolvingBookmarkData:)` to `.withSecurityScope`), **Developer ID signing +
+notarization + hardened runtime**, App Store Connect listing, EULA + privacy policy, and **bespoke app
+artwork** to replace the generated placeholder icon (§13).
 
 Nice-to-haves still open: **multi-monitor** verification (never exercised), tighter text placement (§7),
 scroll-wheel live text resize (REQUIREMENTS §5), and cross-display selection.
@@ -392,6 +400,36 @@ On the owner's M4 Mac, editor signed with `ahdishot-dev`:
 - Change **toolbar layout / icons / popover**: `EditorToolbar.swift` (`toolOrder`, `makeButton`, `ToolOptionsController`).
 - Change **Copy/Save/Close wiring** or editor window setup: `EditorWindowController.swift`.
 - Menu bar items: `AppDelegate.setupStatusItem`.
+- Change the **app icon**: edit `tools/make-icon.swift`, then regenerate (§13).
+
+---
+
+## 13. App icon & local install (Phase-3.5 polish, 2026-07-05)
+
+**Icon.** `Resources/AppIcon.icns` is a **generated placeholder** — a blue→purple rounded-rect squircle
+with a white `camera.viewfinder` SF Symbol (same motif as the menu bar). It's **original** art (SF Symbol
+on a custom plate; no Lightshot assets), meant to be replaced by bespoke artwork before any public release
+(REQUIREMENTS §11). Wired via `CFBundleIconFile=AppIcon` in `Info.plist`; `build.sh` copies the `.icns`
+into `Contents/Resources`.
+
+**Regenerate it** (no Xcode needed):
+```bash
+swift tools/make-icon.swift /tmp/AppIcon.iconset
+iconutil -c icns /tmp/AppIcon.iconset -o Resources/AppIcon.icns
+./build.sh
+```
+
+**Local install.** Since distribution is on hold (§9), the app is installed **by hand**:
+```bash
+./build.sh
+pkill -x ahdishot; rm -rf /Applications/ahdishot.app
+ditto build/ahdishot.app /Applications/ahdishot.app   # ditto preserves the code signature
+open /Applications/ahdishot.app
+```
+Notes: the stable `ahdishot-dev` signature means the Screen Recording grant carries over to the
+`/Applications` copy (same bundle id + cert). **After installing, re-toggle Launch at Login from the
+`/Applications` copy** so the login item points at the installed app, not an old `build/` path. If the icon
+looks stale in the Dock/Finder, `touch /Applications/ahdishot.app` (already done at install).
 
 ---
 
