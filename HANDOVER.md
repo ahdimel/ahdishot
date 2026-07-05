@@ -4,12 +4,11 @@
 > source of truth for scope & decisions). This doc covers **what Phases 1–3 delivered, how it's built,
 > what is verified vs. still needs a human smoke-test, and where Phase 4 starts.**
 >
-> **Date:** 2026-07-05 · **Status:** Phases 1–2 **owner-verified on-device** (native arm64). **Phase 3
-> (Settings & polish) is owner-verified on-device** (Settings window, hotkey recorder incl. Clear/no-hotkey,
-> reject-beep, PNG/JPG, folder picker, default color/thickness, and **persistence across relaunch**) — see
-> §12.1. **The one bit still unverified is launch-at-login surviving an actual reboot** (the Login Items
-> entry appears correctly; owner will confirm auto-boot after a restart). Phase 2 = the inline annotation
-> editor (§0). Ready for Phase 4 (§9).
+> **Date:** 2026-07-05 · **Status:** Phases 1–3 **fully owner-verified on-device** (native arm64). Phase 3
+> (Settings & polish): Settings window, hotkey recorder incl. Clear/no-hotkey, reject-beep, PNG/JPG, folder
+> picker, default color/thickness, **persistence across relaunch**, and **launch-at-login confirmed across a
+> real reboot** (auto-boots with settings intact) — see §12.1. Phase 2 = the inline annotation editor (§0).
+> Only **multi-monitor** remains unexercised across all phases. Ready for Phase 4 (§9).
 
 ---
 
@@ -101,7 +100,7 @@ Plus a menu-bar agent (no Dock icon) with **Capture Region**, **Open Screenshots
 | **Phase 3 — compiles clean (no warnings), arm64** | ✅ `./build.sh` succeeds; `file` reports arm64. |
 | **Phase 3 — launches, idle footprint** | ✅ launches as before; **~43 MB RSS, 0.0% CPU** idle. |
 | **Phase 3 — Settings window / hotkey recorder (+Clear) / reject-beep / JPG / folder picker / defaults / persistence** | ✅ **Owner-verified 2026-07-05** — see §12.1. |
-| **Phase 3 — launch-at-login survives an actual reboot** | ⏳ **Pending** — Login Items entry appears; owner will confirm auto-boot after a restart. |
+| **Phase 3 — launch-at-login survives an actual reboot** | ✅ **Owner-verified 2026-07-05** — app auto-boots after restart with all settings intact. |
 
 **The interactive paths cannot be exercised headlessly** (they need the macOS Screen Recording TCC grant
 and real mouse input). The owner smoke-tested the whole editor on-device (§10.1). Only **multi-monitor**
@@ -435,4 +434,4 @@ On the owner's M4 Mac, signed with `ahdishot-dev`:
 - ✅ **Persistence across relaunch** confirmed (settings survive quit/relaunch and rebuilds — UserDefaults
   is keyed to the bundle id).
 - ✅ **Launch at Login** toggles the **System Settings ▸ General ▸ Login Items** entry on/off.
-- ⏳ **Auto-boot after an actual reboot** — not yet tested; owner will restart and confirm.
+- ✅ **Auto-boot after an actual reboot** — app launches automatically on login with all settings intact.
