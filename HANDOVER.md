@@ -1,11 +1,48 @@
-# ahdishot — Handover (through Phase 2)
+# ahdishot — Handover (through Phase 3)
 
 > For the next agent/developer picking this up. Pairs with **[REQUIREMENTS.md](REQUIREMENTS.md)** (the
-> source of truth for scope & decisions). This doc covers **what Phases 1–2 delivered, how it's built,
-> what is verified vs. still needs a human smoke-test, and where Phase 3 starts.**
+> source of truth for scope & decisions). This doc covers **what Phases 1–3 delivered, how it's built,
+> what is verified vs. still needs a human smoke-test, and where Phase 4 starts.**
 >
-> **Date:** 2026-07-05 · **Status:** Phases 1–2 **owner-verified on-device** (native arm64). Phase 2 =
-> the inline annotation editor (§0). Only multi-monitor remains unexercised. Ready for Phase 3 (§9).
+> **Date:** 2026-07-05 · **Status:** Phases 1–2 **owner-verified on-device** (native arm64). **Phase 3
+> (Settings & polish) is owner-verified on-device** (Settings window, hotkey recorder incl. Clear/no-hotkey,
+> reject-beep, PNG/JPG, folder picker, default color/thickness, and **persistence across relaunch**) — see
+> §12.1. **The one bit still unverified is launch-at-login surviving an actual reboot** (the Login Items
+> entry appears correctly; owner will confirm auto-boot after a restart). Phase 2 = the inline annotation
+> editor (§0). Ready for Phase 4 (§9).
+
+---
+
+## -1. Phase 3 at a glance (newest work)
+
+A **Settings window** and the persistence/login-item polish from REQUIREMENTS §3.4–§3.5:
+
+- **Menu bar** now has **Settings…** (⌘,) and a checkable **Launch at Login** item (check state refreshes
+  on menu-open via `NSMenuDelegate`).
+- **Settings window** (`SettingsWindowController`, programmatic AppKit, no xib): global **hotkey recorder**,
+  **save folder** picker, **image format** (PNG/JPG) popup, **launch at login** checkbox, default annotation
+  **color** (palette swatches) + **thickness** (Thin/Medium/Thick). Writes straight through to `Settings`.
+- **Persistence** (`Settings`, `UserDefaults`): hotkey code+modifiers, save-folder **bookmark**, format,
+  default color index, default thickness. Registered defaults = ⌘1 / PNG / red / medium.
+- **Global hotkey is now driven by the setting** and **re-registers live** when changed (via the
+  `Settings.hotKeyChanged` notification → `AppDelegate.registerHotKey`).
+- **Hotkey is optional** — the recorder has a **Clear** button; cleared = **no global hotkey** (capture
+  only via the menu bar's Capture Region). "None" is stored as **zero modifiers** (not keyCode 0, which is
+  a real key — `kVK_ANSI_A`); `Settings.hasHotKey` gates registration. The recorder shows "Click to set…"
+  when cleared. Recording **requires ≥1 modifier** (bare key ⇒ beep) so a shortcut can't hijack a plain key.
+- **Launch at login** = `SMAppService.mainApp` (`LaunchAtLogin`); links the **ServiceManagement** framework.
+- **Save honors format + folder**: `ScreenCapturer.savePNG` → **`ScreenCapturer.save`** (PNG or JPEG@0.9),
+  `saveDirectory()` resolves the configured folder. **Clipboard stays PNG** regardless of format.
+- **Editor defaults**: `EditorView` seeds every tool's color/thickness from `Settings` (then per-tool
+  memory takes over as before).
+
+New files: `Settings.swift`, `LaunchAtLogin.swift`, `HotKeyRecorderButton.swift`,
+`SettingsWindowController.swift`. Changed: `AppDelegate.swift`, `ScreenCapturer.swift`, `EditorView.swift`,
+`EditorWindowController.swift`, `build.sh` (+ServiceManagement). Build/run unchanged (`./build.sh`).
+
+**Save-folder is App-Store-ready by design:** it's stored as a **bookmark** produced by the NSOpenPanel
+picker. Phase 4 only swaps `bookmarkData()`/`URL(resolvingBookmarkData:)` for their `.withSecurityScope`
+variants once the sandbox `user-selected.read-write` entitlement exists — see `Settings.swift` header.
 
 ---
 
@@ -61,6 +98,10 @@ Plus a menu-bar agent (no Dock icon) with **Capture Region**, **Open Screenshots
 | **Phase 2 — compiles clean (no warnings), arm64** | ✅ `./build.sh` succeeds; `file` reports arm64. |
 | **Phase 2 — launches, idle footprint** | ✅ launches as before; **~43 MB RSS, 0.0% CPU** idle. |
 | **Phase 2 — full editor (annotate / palette / text / copy / save / undo / resize / re-crop-clip / esc / edge-flip)** | ✅ **Owner-verified 2026-07-05** — see §10.1. |
+| **Phase 3 — compiles clean (no warnings), arm64** | ✅ `./build.sh` succeeds; `file` reports arm64. |
+| **Phase 3 — launches, idle footprint** | ✅ launches as before; **~43 MB RSS, 0.0% CPU** idle. |
+| **Phase 3 — Settings window / hotkey recorder (+Clear) / reject-beep / JPG / folder picker / defaults / persistence** | ✅ **Owner-verified 2026-07-05** — see §12.1. |
+| **Phase 3 — launch-at-login survives an actual reboot** | ⏳ **Pending** — Login Items entry appears; owner will confirm auto-boot after a restart. |
 
 **The interactive paths cannot be exercised headlessly** (they need the macOS Screen Recording TCC grant
 and real mouse input). The owner smoke-tested the whole editor on-device (§10.1). Only **multi-monitor**
@@ -82,11 +123,15 @@ ahdishot/
 │   ├── HotKeyManager.swift  # Carbon RegisterEventHotKey wrapper
 │   ├── KeyableWindow.swift  # Borderless NSWindow that can become key (overlay + editor; fixes Esc)
 │   ├── SelectionOverlay.swift # Overlay windows + drag-select view + dimensions readout
-│   ├── ScreenCapturer.swift # ScreenCaptureKit full-display grab, crop, clipboard, PNG save
+│   ├── ScreenCapturer.swift # ScreenCaptureKit full-display grab, crop, clipboard, PNG/JPG save (per Settings)
 │   ├── Annotation.swift     # Non-destructive drawable objects (rect/ellipse/arrow/line/pencil/marker/text)
 │   ├── EditorView.swift     # Editor canvas: backdrop, selection edit, drawing, text, flatten() + Tool/Palette
 │   ├── EditorToolbar.swift  # Combined bottom toolbar + per-tool options popover
-│   └── EditorWindowController.swift # Hosts the editor window; wires Copy/Save/Close
+│   ├── EditorWindowController.swift # Hosts the editor window; wires Copy/Save/Close
+│   ├── Settings.swift       # UserDefaults model: hotkey, save-folder bookmark, format, default color/thickness
+│   ├── LaunchAtLogin.swift  # SMAppService.mainApp login-item wrapper
+│   ├── HotKeyRecorderButton.swift # Click-to-record shortcut control (keyCode+modifier capture)
+│   └── SettingsWindowController.swift # Settings window (programmatic AppKit)
 ├── Resources/
 │   └── Info.plist           # Bundle id com.ahdimel.ahdishot, LSUIElement, min macOS 15
 └── build/                   # (generated) ahdishot.app lives here
@@ -254,16 +299,40 @@ Ran on the owner's M4 Mac, macOS 26.5:
   flip/clamp on-screen. Selecting a draw tool opens an `NSPopover` (`ToolOptionsController`) with the 8
   swatches + thickness segmented control + (text) size popup; settings are remembered **per tool**.
   Icons are original **SF Symbols** (no Lightshot assets). Copy/Save call `flatten()` →
-  `ScreenCapturer.copyToClipboard` / `savePNG`, then dismiss.
+  `ScreenCapturer.copyToClipboard` / `save`, then dismiss.
 
-## 9. Where Phase 3 starts (settings & polish)
+## 8.5 Phase 3 architecture (read before editing settings code)
 
-Per **[REQUIREMENTS.md](REQUIREMENTS.md) §3.4/§10**: a **Settings window** (hotkey config, save folder,
-image format PNG/**JPG**, launch-at-login, default color/thickness), **`SMAppService`** launch-at-login,
-`UserDefaults` persistence, and multi-monitor/Retina correctness passes. Then **Phase 4** (sandbox
-entitlements + security-scoped bookmark for the save folder, signing, notarization, App Store) per
-REQUIREMENTS §9. Nice-to-haves surfaced by Phase 2: tighter text placement (§7), scroll-wheel live text
-resize (REQUIREMENTS §5), and cross-display selection.
+- **`Settings`** (singleton over `UserDefaults`) is the one source of truth for hotkey, save folder,
+  format, default color/thickness. It `register(defaults:)`s the shipping defaults (⌘1 / PNG / red /
+  medium) so a fresh install behaves like Phases 1–2. Changing the hotkey posts `Settings.hotKeyChanged`;
+  `AppDelegate.registerHotKey` observes it and re-registers the Carbon hotkey **live** (no relaunch).
+- **Save folder is a bookmark, not a path** — see the §-1 note and the `Settings.swift` header. This is the
+  deliberate App-Store seam: the picker already yields the bookmark; Phase 4 flips two options to
+  `.withSecurityScope`.
+- **`LaunchAtLogin`** wraps `SMAppService.mainApp`; its `status` **is** the state (nothing mirrored in
+  `UserDefaults`). Registration can throw (translocated/quarantined path) — both the menu item and the
+  Settings checkbox catch, alert, and revert. Links the **ServiceManagement** framework (`build.sh`).
+- **`HotKeyRecorderButton`** records via a **local `NSEvent` monitor** (returns `nil` to swallow the combo
+  so it doesn't trigger menu/app shortcuts). Requires ≥1 modifier (a bare global key would shadow it in
+  every app); `Esc` cancels. Converts `NSEvent.ModifierFlags` → Carbon mask; virtual-keycode→label table
+  is `keyNames`.
+- **`SettingsWindowController`** is programmatic AppKit (no xib), reused across opens, `syncFromSettings()`
+  on each show. Every control writes straight through to `Settings`/`LaunchAtLogin` — no Apply/OK button.
+- **`ScreenCapturer.save`** replaced `savePNG`: encodes PNG or **JPEG@0.9** per `Settings.imageFormat`;
+  filename extension follows. **Clipboard stays PNG** (lossless, universally pasteable). `EditorView`
+  seeds each tool's color/thickness from `Settings` at construction, then per-tool memory takes over.
+
+## 9. Where Phase 4 starts (distribution readiness)
+
+Phase 3 is code-complete (pending owner smoke-test §12). **Phase 4** per **[REQUIREMENTS.md](REQUIREMENTS.md)
+§9**: App **Sandbox** entitlements + the **security-scoped bookmark** flip for the save folder (the seam is
+already in `Settings.swift` — swap `bookmarkData()`/`URL(resolvingBookmarkData:)` to `.withSecurityScope`),
+**Developer ID signing + notarization + hardened runtime**, App Store Connect listing, EULA + privacy
+policy. Prereq: owner enrolls in the **Apple Developer Program** (REQUIREMENTS §11).
+
+Nice-to-haves still open: **multi-monitor** verification (never exercised), tighter text placement (§7),
+scroll-wheel live text resize (REQUIREMENTS §5), and cross-display selection.
 
 ---
 
@@ -308,8 +377,14 @@ On the owner's M4 Mac, editor signed with `ahdishot-dev`:
 
 ## 11. Quick reference — key files & symbols
 
-- Change the **hotkey default**: `AppDelegate.applicationDidFinishLaunching` (`kVK_ANSI_1`, `cmdKey`).
-- Change **save location / format / filename**: `ScreenCapturer.saveDirectory` / `savePNG` / `timestamp`.
+- Change the **hotkey default** (fresh-install value): `Settings.init` registered defaults (`kVK_ANSI_1`,
+  `cmdKey`). The live hotkey is read from `Settings.hotKeyCode/Modifiers` in `AppDelegate.registerHotKey`.
+- Change **save location / format / filename**: `Settings.saveFolderURL` / `ScreenCapturer.save` +
+  `ScreenCapturer.encode` / `ScreenCapturer.timestamp`.
+- Change **default color/thickness/format defaults**: `Settings.init` registered defaults.
+- Change the **Settings window** (rows, controls, layout): `SettingsWindowController`.
+- Change the **hotkey recorder** (key labels, modifier rules): `HotKeyRecorderButton` (`keyNames`, `handle`).
+- Change **launch-at-login** behavior: `LaunchAtLogin` (`SMAppService.mainApp`).
 - Change **overlay look** (dim level, border, dimensions): `SelectionView.draw` / `drawDimensions`.
 - Change **full-display capture / crop math**: `ScreenCapturer.captureFullDisplay` / `crop(_:screen:localRect:)`.
 - Change **palette / thickness / text sizes**: constants at the top of `EditorView.swift`
@@ -318,3 +393,46 @@ On the owner's M4 Mac, editor signed with `ahdishot-dev`:
 - Change **toolbar layout / icons / popover**: `EditorToolbar.swift` (`toolOrder`, `makeButton`, `ToolOptionsController`).
 - Change **Copy/Save/Close wiring** or editor window setup: `EditorWindowController.swift`.
 - Menu bar items: `AppDelegate.setupStatusItem`.
+
+---
+
+## 12. Phase 3 first-run smoke-test checklist (do this next)
+
+`./build.sh && open build/ahdishot.app`, then:
+
+1. **Menu bar:** open the menu → **Settings…** (⌘,) and **Launch at Login** are present.
+2. **Settings window opens** and shows current values (hotkey `⌘1`, save folder `~/Pictures/ahdishot`,
+   format PNG, red swatch ringed, thickness Medium).
+3. **Hotkey recorder:** click it → "Type shortcut…" → press e.g. **⌥⇧2** → it displays `⌥⇧2`. Press the
+   new combo from any app → capture starts. Press **⌘1** again to restore (or your preference). Confirm a
+   **bare key with no modifier is rejected** (beep), and **Esc** while recording cancels (quietly — that's
+   the cancel path, distinct from the beep).
+3a. **Clear (no hotkey):** click **Clear** → recorder shows "Click to set…", the old shortcut no longer
+   fires anywhere (it passes through to the frontmost app); capture still works via menu ▸ Capture Region.
+   Set a new shortcut → re-registers live. Quit/relaunch while cleared → stays cleared.
+4. **Save folder:** click **Choose…**, pick a different folder → capture+**Save** writes there. Point it
+   back to `~/Pictures/ahdishot` (or wherever you want).
+5. **Image format → JPG:** capture, **Save** → a `.jpg` lands (verify it opens). Switch back to PNG.
+   Confirm **Copy** still puts a **PNG** on the clipboard regardless of format.
+6. **Default color/thickness:** set default color = blue, thickness = Thick → open a new capture; the first
+   draw tool starts **blue/thick** (per-tool memory still works after that).
+7. **Launch at Login:** toggle it **on** (menu item checks; Settings checkbox agrees) → confirm ahdishot
+   appears in **System Settings ▸ General ▸ Login Items**. Toggle **off** → it disappears. (If it throws,
+   note the path — SMAppService dislikes translocated/quarantined app copies; run from a stable location.)
+8. **Persistence:** Quit and relaunch → all settings above survived.
+9. **Idle after close:** RSS/CPU back to ~40 MB / 0%.
+
+### 12.1 Smoke-test results (2026-07-05, owner)
+
+On the owner's M4 Mac, signed with `ahdishot-dev`:
+
+- ✅ **Settings window** opens from the menu (⌘,) with all current values shown.
+- ✅ **Hotkey recorder** records new shortcuts and re-registers live; **bare key ⇒ beep** (reject),
+  **Esc** cancels quietly.
+- ✅ **Clear / no-hotkey** works — cleared shortcut stops firing globally; menu-bar capture still works;
+  setting a new shortcut re-registers.
+- ✅ **Save folder** picker, **PNG↔JPG** format, and **default color/thickness** all apply.
+- ✅ **Persistence across relaunch** confirmed (settings survive quit/relaunch and rebuilds — UserDefaults
+  is keyed to the bundle id).
+- ✅ **Launch at Login** toggles the **System Settings ▸ General ▸ Login Items** entry on/off.
+- ⏳ **Auto-boot after an actual reboot** — not yet tested; owner will restart and confirm.

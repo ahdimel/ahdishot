@@ -146,7 +146,8 @@ Layout and behavior (confirmed with owner):
 
 - **Palette (CONFIRMED):** red, orange, yellow, green, blue, purple, black, white.
 - **Default active color:** red.
-- **Stroke thicknesses (proposed):** thin / medium / thick (e.g. 2 / 4 / 6 pt at 1×). _Owner to confirm._
+- **Stroke thicknesses (CONFIRMED):** thin / medium / thick = **2 / 4 / 6 pt** at 1× (owner-confirmed
+  2026-07-05). Default = medium (4 pt).
 - **Text size (CONFIRMED approach):** the user **pre-selects** a size from a **wide preset range** —
   wider than the earlier 14–28 pt proposal — to cover both tiny detailed labels and large banners.
   Proposed presets: **8, 10, 12, 14, 18, 24, 36, 48, 72, 96 pt** (palette-colored, system font).
@@ -252,7 +253,6 @@ Each phase is **run and verified on-device**, not just compiled.
 
 ## 11. Open questions / TBD
 
-1. **Stroke thickness steps** — confirm the thin/medium/thick values in §5. _(Annotation UI §4, palette,
-   text-size range, region-only capture, and no-print are all confirmed.)_
+1. ~~**Stroke thickness steps**~~ — **RESOLVED 2026-07-05:** thin/medium/thick = **2 / 4 / 6 pt** (§5).
 2. **App / menu-bar icon** — placeholder SF Symbol for now; commission original artwork before release.
 3. **Apple Developer Program** — owner to enroll before any signed/App Store build (Phase 4).

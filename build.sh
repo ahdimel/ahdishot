@@ -17,6 +17,7 @@ swiftc -O \
   -framework Cocoa \
   -framework ScreenCaptureKit \
   -framework Carbon \
+  -framework ServiceManagement \
   -framework UniformTypeIdentifiers
 
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"

@@ -59,7 +59,7 @@ final class EditorWindowController {
 
     private func performSave() {
         if let image = editorView?.flatten() {
-            do { _ = try ScreenCapturer.savePNG(image) }
+            do { _ = try ScreenCapturer.save(image) }
             catch { NSLog("ahdishot: save failed — \(error.localizedDescription)") }
         }
         dismiss()

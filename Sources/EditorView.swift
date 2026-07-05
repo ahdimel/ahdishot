@@ -82,7 +82,12 @@ final class EditorView: NSView {
         self.displayImage = NSImage(cgImage: image,
                                     size: NSSize(width: screen.frame.width, height: screen.frame.height))
         self.selectionRect = selection
-        for tool in Tool.allCases { settingsByTool[tool] = ToolSettings() }
+        // Seed every tool with the user's configured default color/thickness (REQUIREMENTS FR-16);
+        // each tool then remembers its own edits from there.
+        var defaults = ToolSettings()
+        defaults.color = Settings.shared.defaultColor
+        defaults.thickness = Settings.shared.defaultThickness
+        for tool in Tool.allCases { settingsByTool[tool] = defaults }
         super.init(frame: NSRect(origin: .zero, size: screen.frame.size))
     }
 

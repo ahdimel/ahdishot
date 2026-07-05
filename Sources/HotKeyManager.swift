@@ -33,6 +33,14 @@ final class HotKeyManager {
         RegisterEventHotKey(keyCode, modifiers, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
     }
 
+    /// Removes the registered hotkey (used when the user clears the shortcut).
+    func unregister() {
+        if let ref = hotKeyRef {
+            UnregisterEventHotKey(ref)
+            hotKeyRef = nil
+        }
+    }
+
     private func fourCharCode(_ string: String) -> OSType {
         var result: OSType = 0
         for scalar in string.unicodeScalars.prefix(4) {

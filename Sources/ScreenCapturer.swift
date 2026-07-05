@@ -10,7 +10,7 @@ enum CaptureError: Error, LocalizedError {
         switch self {
         case .noDisplay:   return "Could not find the display to capture."
         case .cropFailed:  return "Failed to crop the captured image to the selection."
-        case .encodeFailed: return "Failed to encode the image as PNG."
+        case .encodeFailed: return "Failed to encode the captured image."
         }
     }
 }
@@ -69,22 +69,27 @@ enum ScreenCapturer {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.writeObjects([nsImage])
-        if let data = pngData(from: image) {
+        // Clipboard is always PNG (lossless, universally pasteable) regardless of the save format.
+        if let data = encode(image, as: .png) {
             pasteboard.setData(data, forType: .png)
         }
     }
 
+    /// Saves `image` to the configured folder using the configured format (PNG/JPG), with a
+    /// timestamped filename (REQUIREMENTS FR-11).
     @discardableResult
-    static func savePNG(_ image: CGImage) throws -> URL {
-        guard let data = pngData(from: image) else { throw CaptureError.encodeFailed }
-        let url = try saveDirectory().appendingPathComponent("ahdishot_\(timestamp()).png")
+    static func save(_ image: CGImage) throws -> URL {
+        let format = Settings.shared.imageFormat
+        guard let data = encode(image, as: format) else { throw CaptureError.encodeFailed }
+        let url = try saveDirectory()
+            .appendingPathComponent("ahdishot_\(timestamp()).\(format.fileExtension)")
         try data.write(to: url)
         return url
     }
 
+    /// The user-configured save folder (default `~/Pictures/ahdishot/`), created if missing.
     static func saveDirectory() throws -> URL {
-        let pictures = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask).first!
-        let dir = pictures.appendingPathComponent("ahdishot", isDirectory: true)
+        let dir = Settings.shared.saveFolderURL()
         if !FileManager.default.fileExists(atPath: dir.path) {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         }
@@ -93,10 +98,15 @@ enum ScreenCapturer {
 
     // MARK: - Helpers
 
-    private static func pngData(from image: CGImage) -> Data? {
+    private static func encode(_ image: CGImage, as format: ImageFormat) -> Data? {
         let rep = NSBitmapImageRep(cgImage: image)
         rep.size = NSSize(width: image.width, height: image.height)
-        return rep.representation(using: .png, properties: [:])
+        switch format {
+        case .png:
+            return rep.representation(using: .png, properties: [:])
+        case .jpg:
+            return rep.representation(using: .jpeg, properties: [.compressionFactor: 0.9])
+        }
     }
 
     private static func timestamp() -> String {
