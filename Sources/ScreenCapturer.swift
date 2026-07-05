@@ -18,9 +18,10 @@ enum CaptureError: Error, LocalizedError {
 /// Captures a display via ScreenCaptureKit and crops to the selected region.
 enum ScreenCapturer {
 
-    /// Captures `screen` at native resolution and returns the cropped selection as a CGImage.
-    /// `localRect` is in the screen's local (bottom-left origin, points) space.
-    static func capture(screen: NSScreen, localRect: NSRect) async throws -> CGImage {
+    /// Captures the entire `screen` at native (Retina) pixel resolution and returns the full
+    /// display image. The editor keeps this frozen frame so the selection can be re-cropped or
+    /// moved after the fact; export crops it via `crop(_:screen:localRect:)`.
+    static func captureFullDisplay(screen: NSScreen) async throws -> CGImage {
         let scale = screen.backingScaleFactor
         let displayID = (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID)
             ?? CGMainDisplayID()
@@ -41,10 +42,13 @@ enum ScreenCapturer {
         config.scalesToFit = false
         config.captureResolution = .best
 
-        let fullImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+        return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+    }
 
-        // Convert local (bottom-left origin, points) selection to the captured image's
-        // pixel space (top-left origin).
+    /// Crops a full-display capture to `localRect`, given in the screen's local
+    /// (bottom-left origin, points) space. Converts to the image's pixel, top-left-origin space.
+    static func crop(_ fullImage: CGImage, screen: NSScreen, localRect: NSRect) throws -> CGImage {
+        let scale = screen.backingScaleFactor
         let yTop = screen.frame.height - (localRect.origin.y + localRect.height)
         let cropRect = CGRect(
             x: (localRect.origin.x * scale).rounded(),
@@ -52,7 +56,6 @@ enum ScreenCapturer {
             width: (localRect.width * scale).rounded(),
             height: (localRect.height * scale).rounded()
         )
-
         guard let cropped = fullImage.cropping(to: cropRect) else {
             throw CaptureError.cropFailed
         }

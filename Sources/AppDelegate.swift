@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let hotKey = HotKeyManager()
     private var overlay: SelectionOverlayController?
+    private var editor: EditorWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
@@ -73,17 +74,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func handleSelection(screen: NSScreen, rect: NSRect) {
-        Task {
+        Task { @MainActor in
             do {
-                let image = try await ScreenCapturer.capture(screen: screen, localRect: rect)
-                // Phase 1 has no editor yet, so we both copy and save to prove the pipeline.
-                // (In Phase 2 the inline editor separates Copy and Save per the requirements.)
-                ScreenCapturer.copyToClipboard(image)
-                let url = try ScreenCapturer.savePNG(image)
-                NSLog("ahdishot: captured \(image.width)x\(image.height), saved to \(url.path)")
+                // Grab the whole display as a frozen frame, then open the inline editor over it.
+                // Capturing the full display (not just the crop) is what lets the selection be
+                // re-cropped/moved inside the editor, and sidesteps full-screen-Space overlay quirks.
+                let image = try await ScreenCapturer.captureFullDisplay(screen: screen)
+                self.presentEditor(image: image, screen: screen, selection: rect)
             } catch {
-                await MainActor.run { self.presentCaptureError(error) }
+                self.presentCaptureError(error)
             }
+        }
+    }
+
+    @MainActor
+    private func presentEditor(image: CGImage, screen: NSScreen, selection: NSRect) {
+        guard editor == nil else { return }
+        let controller = EditorWindowController()
+        editor = controller
+        controller.present(image: image, screen: screen, selection: selection) { [weak self] in
+            self?.editor = nil
         }
     }
 

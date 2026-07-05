@@ -18,10 +18,10 @@ final class SelectionOverlayController {
         self.completion = completion
 
         for screen in NSScreen.screens {
-            let window = NSWindow(contentRect: screen.frame,
-                                  styleMask: .borderless,
-                                  backing: .buffered,
-                                  defer: false)
+            let window = KeyableWindow(contentRect: screen.frame,
+                                       styleMask: .borderless,
+                                       backing: .buffered,
+                                       defer: false)
             window.level = .screenSaver
             window.backgroundColor = .clear
             window.isOpaque = false
@@ -41,7 +41,11 @@ final class SelectionOverlayController {
         }
 
         NSApp.activate(ignoringOtherApps: true)
-        windows.first?.makeKey()
+        // Make the first window key and route keystrokes to its view so Esc cancels (Phase 1 bug).
+        if let first = windows.first {
+            first.makeKeyAndOrderFront(nil)
+            first.makeFirstResponder(first.contentView)
+        }
     }
 
     private func finish(screen: NSScreen?, rect: NSRect?) {
