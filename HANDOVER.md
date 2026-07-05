@@ -32,7 +32,7 @@ Plus a menu-bar agent (no Dock icon) with **Capture Region**, **Open Screenshots
 | Launches as a menu-bar agent, no crash | ✅ runs; menu bar icon present; no Dock icon |
 | Idle resource use | ✅ **~40 MB RSS, 0.0% CPU** (event-driven, no polling) |
 | Hotkey registration (Carbon) | ✅ registers at launch without error |
-| **End-to-end capture (permission + drag + save)** | ⚠️ **NOT yet smoke-tested by a human** — needs Screen Recording permission grant + an interactive drag. See §6. |
+| **End-to-end capture (permission + drag + save)** | ✅ **Smoke-tested 2026-07-05** (owner) — permission grant, drag-select, crisp Retina PNG saved, works over a full-screen game (Factorio). See §6.1. |
 
 **The interactive capture path could not be exercised headlessly** (it requires the macOS Screen
 Recording TCC grant and a real mouse drag). Everything up to that point is verified. First human run should
@@ -126,7 +126,26 @@ ScreenCaptureKit, Carbon, UniformTypeIdentifiers.
 
 ---
 
+### 6.1 Smoke-test results (2026-07-05, owner)
+
+Ran on the owner's M4 Mac, macOS 26.5:
+
+- ✅ Screen Recording permission granted; capture works.
+- ✅ Hotkey opens a selection area that tracks the cursor.
+- ✅ Drag + click commits the selection, auto-closes the overlay, and saves.
+- ✅ A crisp high-res PNG is saved to `~/Pictures/ahdishot/` as intended.
+- ✅ Works over a **full-screen video game (Factorio)** — the §7 full-screen-Space risk did **not**
+  materialize here. (Still worth keeping in mind for other full-screen apps.)
+- ❌ **Esc does not cancel** the selection — see §7 (this is a bug, not just the auto-commit behavior).
+
 ## 7. Known limitations / risks to watch
+
+- **Esc doesn't cancel the selection (BUG).** `SelectionView.keyDown` handles Esc (keyCode 53), but the
+  borderless overlay window almost certainly isn't becoming key / first responder, so the keystroke never
+  reaches the view. Fix in Phase 2: make the overlay window `canBecomeKey == true` (subclass `NSWindow`
+  overriding `canBecomeKey`) and set the view as `initialFirstResponder` / call
+  `makeFirstResponder(view)` after `makeKey`. (Note: once Phase 2 shows an inline editor instead of
+  auto-committing on mouseUp, Esc/cancel semantics change anyway — wire cancel there too.)
 
 - **Full-screen Spaces:** the overlay uses `.canJoinAllSpaces` + `.fullScreenAuxiliary`, but showing a
   selection overlay over another app's *dedicated full-screen Space* is historically finicky on macOS.
