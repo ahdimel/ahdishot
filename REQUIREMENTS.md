@@ -39,17 +39,17 @@
 | Save + clipboard | **Separate actions** — Save writes to disk only; Copy is a distinct button (no auto-copy on save) |
 | Image format | **Configurable, default PNG** (PNG or JPG) |
 | Post-save feedback | **Silent** — no sound, notification, or thumbnail |
-| Global hotkey | **⌘ + 1** (owner's explicit choice; user-configurable). ⚠️ Shadows ⌘1 in all apps while running |
+| Global hotkey | **⌘ + ⇧ + 2** default (user-configurable). Was ⌘1, the owner's own choice, which shadows ⌘1 in every app while running; changed 2026-10-26 for the public release. Existing installs keep whatever hotkey is already saved |
 | Launch at login | **Yes** — user-toggleable |
 | Minimum macOS | **macOS 15 (Sequoia)** and later |
-| Source licensing | **Proprietary / closed** (App-Store-compatible; owner retains all rights) |
+| Source licensing | **MIT** (open source, `LICENSE`; owner decision 2026-10-26, replacing proprietary/closed. The GitHub repo was already public) |
 
 ---
 
 ## 3. Functional requirements
 
 ### 3.1 Activation & capture
-- **FR-1** The app runs as a background agent and is triggered by a **global hotkey (default ⌘1)** from
+- **FR-1** The app runs as a background agent and is triggered by a **global hotkey (default ⌘⇧2)** from
   any app or state, including while a video plays full-screen or a game is running. The capture is a
   still snapshot of the screen at the instant the hotkey is pressed.
 - **FR-2** On trigger, the app enters **region-selection mode**: a dim overlay covers **all connected
@@ -94,7 +94,7 @@
 ### 3.4 Menu bar & settings
 - **FR-15** A **menu bar icon** exposes: _Capture now_, _Settings…_, _Launch at login_ (toggle), _Quit_.
 - **FR-16** **Settings** window lets the user configure:
-  - Global **hotkey** (default ⌘1)
+  - Global **hotkey** (default ⌘⇧2)
   - Default **save folder** (default `~/Pictures/ahdishot/`)
   - **Image format** (PNG default / JPG)
   - **Launch at login** on/off
@@ -233,8 +233,8 @@ Layout and behavior (confirmed with owner):
 - **Hardened runtime:** enable; declare entitlements minimally.
 - **Privacy:** App Store **privacy nutrition label** = "no data collected" (true here). Provide a short
   privacy policy URL (can state no collection).
-- **Licensing:** **proprietary/closed** source; owner retains all rights. Ship an EULA. (Confirm no
-  third-party code with incompatible licenses is bundled — currently none planned.)
+- **Licensing:** **MIT** since 2026-10-26 (was proprietary/closed). MIT is App-Store-compatible. (Confirm
+  no third-party code with incompatible licenses is bundled — currently none.)
 - **Pricing:** free or one-time paid — both are straightforward App Store models; no server needed.
 - **Do NOT** reuse any Lightshot assets (icons/strings/images). All UI assets for ahdishot must be
   **original** to avoid IP issues. Menu bar / app icon: original artwork or SF Symbols.

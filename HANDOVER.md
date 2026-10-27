@@ -12,6 +12,25 @@
 
 ---
 
+## -2. Public release without the App Store (2026-10-26)
+
+The owner is not paying for the Apple Developer Program, so Phase 4 stays on hold and ahdishot ships
+free from https://ahdimel.com/ahdishot/ in two forms:
+
+- **Disk image:** `./make-dmg.sh` → `build/ahdishot-<version>.dmg` (app + `/Applications` link). It's
+  signed with the self-signed `ahdishot-dev` identity, not notarized, so `spctl` rejects it and each user
+  clicks **Open Anyway** once (README "Install"). Keeping the one identity across releases means a user's
+  Screen Recording grant survives upgrades. `hdiutil` fails inside the Claude Code sandbox ("Device not
+  configured"); run it outside.
+- **Source:** the GitHub repo (public, MIT `LICENSE`). Building locally avoids Gatekeeper entirely
+  because the result isn't quarantined. With no `ahdishot-dev` cert, `build.sh` signs ad hoc.
+
+Changes made for strangers: default hotkey **⌘1 → ⌘⇧2** (⌘1 shadowed "first tab"/"icon view" in every
+app). Saved settings win, so the owner's install keeps ⌘1. The capture-error alert now names the macOS
+15+ pane, "Screen & System Audio Recording". Still unverified: multi-monitor.
+
+---
+
 ## -1. Phase 3 at a glance (newest work)
 
 A **Settings window** and the persistence/login-item polish from REQUIREMENTS §3.4–§3.5:
@@ -22,7 +41,7 @@ A **Settings window** and the persistence/login-item polish from REQUIREMENTS §
   **save folder** picker, **image format** (PNG/JPG) popup, **launch at login** checkbox, default annotation
   **color** (palette swatches) + **thickness** (Thin/Medium/Thick). Writes straight through to `Settings`.
 - **Persistence** (`Settings`, `UserDefaults`): hotkey code+modifiers, save-folder **bookmark**, format,
-  default color index, default thickness. Registered defaults = ⌘1 / PNG / red / medium.
+  default color index, default thickness. Registered defaults = ⌘⇧2 (⌘1 until 2026-10-26) / PNG / red / medium.
 - **Global hotkey is now driven by the setting** and **re-registers live** when changed (via the
   `Settings.hotKeyChanged` notification → `AppDelegate.registerHotKey`).
 - **Hotkey is optional** — the recorder has a **Clear** button; cleared = **no global hotkey** (capture
@@ -306,8 +325,8 @@ Ran on the owner's M4 Mac, macOS 26.5:
 ## 8.5 Phase 3 architecture (read before editing settings code)
 
 - **`Settings`** (singleton over `UserDefaults`) is the one source of truth for hotkey, save folder,
-  format, default color/thickness. It `register(defaults:)`s the shipping defaults (⌘1 / PNG / red /
-  medium) so a fresh install behaves like Phases 1–2. Changing the hotkey posts `Settings.hotKeyChanged`;
+  format, default color/thickness. It `register(defaults:)`s the shipping defaults (⌘⇧2 / PNG / red /
+  medium; the hotkey was ⌘1 until 2026-10-26). Changing the hotkey posts `Settings.hotKeyChanged`;
   `AppDelegate.registerHotKey` observes it and re-registers the Carbon hotkey **live** (no relaunch).
 - **Save folder is a bookmark, not a path** — see the §-1 note and the `Settings.swift` header. This is the
   deliberate App-Store seam: the picker already yields the bookmark; Phase 4 flips two options to

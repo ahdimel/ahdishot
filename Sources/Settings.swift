@@ -37,8 +37,10 @@ final class Settings {
 
     private init() {
         defaults.register(defaults: [
-            Key.hotKeyCode: Int(kVK_ANSI_1),
-            Key.hotKeyModifiers: Int(cmdKey),
+            // ⌘⇧2: free in macOS and beside its own ⌘⇧3/4/5 screenshot keys. (⌘1 would shadow
+            // "first tab"/"icon view" in every app for anyone who installs this.)
+            Key.hotKeyCode: Int(kVK_ANSI_2),
+            Key.hotKeyModifiers: Int(cmdKey | shiftKey),
             Key.imageFormat: ImageFormat.png.rawValue,
             Key.defaultColorIndex: 0,
             Key.defaultThickness: Double(thicknessSteps[1]), // medium

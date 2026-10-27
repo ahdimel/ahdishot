@@ -17,7 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                                name: Settings.hotKeyChanged, object: nil)
     }
 
-    /// (Re)registers the global hotkey from the persisted setting (default ⌘1), or unregisters it
+    /// (Re)registers the global hotkey from the persisted setting (default ⌘⇧2), or unregisters it
     /// entirely if the user cleared the shortcut (capture then only via the menu bar).
     @objc private func registerHotKey() {
         let settings = Settings.shared
@@ -154,7 +154,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         alert.messageText = "ahdishot couldn't capture the screen"
         alert.informativeText = error.localizedDescription
             + "\n\nOn first run, grant Screen Recording permission in "
-            + "System Settings ▸ Privacy & Security ▸ Screen Recording, then try again."
+            + "System Settings ▸ Privacy & Security ▸ Screen & System Audio Recording, then try again."
         alert.addButton(withTitle: "Open Settings")
         alert.addButton(withTitle: "OK")
         NSApp.activate(ignoringOtherApps: true)
